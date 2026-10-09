@@ -1,6 +1,6 @@
 # Industrial Condition Monitoring — Build and Flash Guide
 
-This guide explains how to set up the Windows development environment, build the coordinator and node firmware, flash JN5168 dongles, and view their serial output. It is intended for teammates who are new to the Contiki codebase.
+This guide explains how to set up the Windows development environment, build the coordinator and node firmware, flash JN5168 dongles, and view their serial output. 
 
 ## 1. Project overview
 
