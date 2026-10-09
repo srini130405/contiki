@@ -117,8 +117,9 @@ rpl_tools_init(uip_ipaddr_t *br_prefix)
     /* If an RDC layer is used, turn it off (i.e. keep the radio on at the root). */
     NETSTACK_RDC.off(1);
     memcpy(&global_ipaddr, br_prefix, 16);
-    uip_ds6_set_addr_iid(&global_ipaddr, &uip_lladdr);
-    uip_ds6_addr_add(&global_ipaddr, 0, ADDR_AUTOCONF);
+        /* Fixed coordinator IPv6 address: bbbb::1 */
+    uip_ip6addr(&global_ipaddr, 0xbbbb, 0, 0, 0, 0, 0, 0, 1);
+    uip_ds6_addr_add(&global_ipaddr, 0, ADDR_MANUAL);
     rpl_set_root(RPL_DEFAULT_INSTANCE, &global_ipaddr);
     rpl_set_prefix(rpl_get_any_dag(), br_prefix, 64);
     rpl_repair_root(RPL_DEFAULT_INSTANCE);

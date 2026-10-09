@@ -86,11 +86,12 @@ PROCESS_THREAD(leaf_process, ev, data)
 
   /* -------------------------------------------------------
    * UDP connection
-   * ------------------------------------------------------- */
+   * ----------------------------e--------------------------- */
 
-  uip_ip6addr(&coordinator_ipaddr,
-              0xbbbb, 0x0000, 0x0000, 0x0000,
-              0x0215, 0x8d00, 0x0057, 0xf9f9);
+
+uip_ip6addr(&coordinator_ipaddr,
+            0xbbbb, 0, 0, 0,
+            0, 0, 0, 1);
 
   udp_conn = udp_new(&coordinator_ipaddr, UIP_HTONS(UDP_PORT), NULL);
 
