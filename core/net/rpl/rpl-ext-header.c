@@ -67,6 +67,10 @@
 #define UIP_EXT_HDR_OPT_BUF       ((struct uip_ext_hdr_opt *)&uip_buf[uip_l2_l3_hdr_len + uip_ext_opt_offset])
 #define UIP_EXT_HDR_OPT_PADN_BUF  ((struct uip_ext_hdr_opt_padn *)&uip_buf[uip_l2_l3_hdr_len + uip_ext_opt_offset])
 #define UIP_EXT_HDR_OPT_RPL_BUF   ((struct uip_ext_hdr_opt_rpl *)&uip_buf[uip_l2_l3_hdr_len + uip_ext_opt_offset])
+/* Byte-wise access: stops the compiler merging loads into an unaligned lwz */
+#define OPT_BYTE(n) (*(volatile uint8_t *)&uip_buf[uip_l2_l3_hdr_len + uip_ext_opt_offset + (n)])
+#define OPT_TYPE OPT_BYTE(0)
+#define OPT_LEN  OPT_BYTE(1)
 /*---------------------------------------------------------------------------*/
 int
 rpl_verify_hbh_header(int uip_ext_opt_offset)
@@ -78,9 +82,9 @@ rpl_verify_hbh_header(int uip_ext_opt_offset)
   uip_ds6_route_t *route;
   rpl_parent_t *sender = NULL;
 
-  if(UIP_HBHO_BUF->len != ((RPL_HOP_BY_HOP_LEN - 8) / 8)
-      || UIP_EXT_HDR_OPT_RPL_BUF->opt_type != UIP_EXT_HDR_OPT_RPL
-      || UIP_EXT_HDR_OPT_RPL_BUF->opt_len != RPL_HDR_OPT_LEN) {
+if(UIP_HBHO_BUF->len != ((RPL_HOP_BY_HOP_LEN - 8) / 8)
+    || OPT_TYPE != UIP_EXT_HDR_OPT_RPL
+    || OPT_LEN != RPL_HDR_OPT_LEN)  {
 
     PRINTF("RPL: Hop-by-hop extension header has wrong size or type (%u %u %u)\n",
         UIP_HBHO_BUF->len,
@@ -476,10 +480,9 @@ update_hbh_header(void)
   last_uip_ext_len = uip_ext_len;
   uip_ext_len = 0;
   uip_ext_opt_offset = 2;
-
-  if(UIP_IP_BUF->proto == UIP_PROTO_HBHO && UIP_EXT_HDR_OPT_RPL_BUF->opt_type == UIP_EXT_HDR_OPT_RPL) {
+if(UIP_IP_BUF->proto == UIP_PROTO_HBHO && OPT_TYPE == UIP_EXT_HDR_OPT_RPL) {
     if(UIP_HBHO_BUF->len != ((RPL_HOP_BY_HOP_LEN - 8) / 8)
-        || UIP_EXT_HDR_OPT_RPL_BUF->opt_len != RPL_HDR_OPT_LEN) {
+        || OPT_LEN != RPL_HDR_OPT_LEN)  {
 
       PRINTF("RPL: Hop-by-hop extension header has wrong size (%u %u)\n",
           UIP_EXT_HDR_OPT_RPL_BUF->opt_len,

@@ -92,6 +92,9 @@ NBR_TABLE(struct eb_stat, eb_stats);
 uint8_t tsch_hopping_sequence[TSCH_HOPPING_SEQUENCE_MAX_LEN];
 struct tsch_asn_divisor_t tsch_hopping_sequence_length;
 
+uint8_t tsch_eb_hopping_sequence[TSCH_EB_HOPPING_SEQUENCE_LEN] = TSCH_CONF_EB_HOPPING_SEQUENCE;
+struct tsch_asn_divisor_t tsch_eb_hopping_sequence_length;
+
 /* Default TSCH timeslot timing (in micro-second) */
 static const uint16_t tsch_default_timing_us[tsch_ts_elements_count] = {
   TSCH_DEFAULT_TS_CCA_OFFSET,
@@ -846,6 +849,10 @@ tsch_init(void)
 
   /* Init TSCH sub-modules */
   tsch_reset();
+  /* EB / advertising hopping sequence */
+  TSCH_ASN_DIVISOR_INIT(
+      tsch_eb_hopping_sequence_length,
+      sizeof(tsch_eb_hopping_sequence));
   tsch_queue_init();
   tsch_schedule_init();
   tsch_log_init();

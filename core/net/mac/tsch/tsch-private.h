@@ -86,6 +86,9 @@ extern struct tsch_link *current_link;
 /* TSCH channel hopping sequence */
 extern uint8_t tsch_hopping_sequence[TSCH_HOPPING_SEQUENCE_MAX_LEN];
 extern struct tsch_asn_divisor_t tsch_hopping_sequence_length;
+
+extern uint8_t tsch_eb_hopping_sequence[TSCH_EB_HOPPING_SEQUENCE_LEN];
+extern struct tsch_asn_divisor_t tsch_eb_hopping_sequence_length;
 /* TSCH timeslot timing (in rtimer ticks) */
 extern rtimer_clock_t tsch_timing[tsch_ts_elements_count];
 

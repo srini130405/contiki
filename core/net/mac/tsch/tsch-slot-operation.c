@@ -248,11 +248,37 @@ tsch_release_lock(void)
 
 /* Return channel from ASN and channel offset */
 uint8_t
-tsch_calculate_channel(struct tsch_asn_t *asn, uint8_t channel_offset)
+tsch_calculate_channel(struct tsch_asn_t *asn,
+                       struct tsch_link *link)
 {
-  uint16_t index_of_0 = TSCH_ASN_MOD(*asn, tsch_hopping_sequence_length);
-  uint16_t index_of_offset = (index_of_0 + channel_offset) % tsch_hopping_sequence_length.val;
-  return tsch_hopping_sequence[index_of_offset];
+  uint16_t index_of_0;
+  uint16_t index_of_offset;
+
+  if(link->link_type == LINK_TYPE_ADVERTISING ||
+     link->link_type == LINK_TYPE_ADVERTISING_ONLY) {
+
+    /* EB / advertising links: 3-channel sequence */
+    index_of_0 =
+      TSCH_ASN_MOD(*asn, tsch_eb_hopping_sequence_length);
+
+    index_of_offset =
+      (index_of_0 + link->channel_offset) %
+      tsch_eb_hopping_sequence_length.val;
+
+    return tsch_eb_hopping_sequence[index_of_offset];
+
+  } else {
+
+    /* Normal TSCH links: 8-channel sequence */
+    index_of_0 =
+      TSCH_ASN_MOD(*asn, tsch_hopping_sequence_length);
+
+    index_of_offset =
+      (index_of_0 + link->channel_offset) %
+      tsch_hopping_sequence_length.val;
+
+    return tsch_hopping_sequence[index_of_offset];
+  }
 }
 
 /*---------------------------------------------------------------------------*/
@@ -972,7 +998,7 @@ PT_THREAD(tsch_slot_operation(struct rtimer *t, void *ptr))
       is_active_slot = current_packet != NULL || (current_link->link_options & LINK_OPTION_RX);
       if(is_active_slot) {
         /* Hop channel */
-        current_channel = tsch_calculate_channel(&tsch_current_asn, current_link->channel_offset);
+        current_channel = tsch_calculate_channel(&tsch_current_asn, current_link);
         NETSTACK_RADIO.set_value(RADIO_PARAM_CHANNEL, current_channel);
         /* Turn the radio on already here if configured so; necessary for radios with slow startup */
         tsch_radio_on(TSCH_RADIO_CMD_ON_START_OF_TIMESLOT);
