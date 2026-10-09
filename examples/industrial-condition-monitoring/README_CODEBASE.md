@@ -1,6 +1,6 @@
 # Industrial Condition Monitoring — Codebase Overview
 
-This document explains the current foundational firmware in `examples/industrial-condition-monitoring/`. It is intended for teammates who have not worked through the Contiki codebase before.
+This document explains the current foundational firmware in `examples/industrial-condition-monitoring/`. 
 
 > **Current scope:** this is the networking foundation, not the finished industrial-monitoring application. The current node sends a simple integer value that increments by 10. Edge inference, abnormality alerts, and diagnostic-data transfer are planned application behavior to build on top of this foundation.
 
