@@ -7,8 +7,11 @@
 #include "net/ip/uip.h"
 #include "net/ip/uip-debug.h"
 #include "net/ip/uip-udp-packet.h"
+#include "net/packetbuf.h"
+#include "net/linkaddr.h"
 
 #include "rpl-tools.h"
+#include "packet-format.h"
 #include "node-id.h"
 
 #include <stdio.h>
@@ -29,35 +32,91 @@ static struct uip_udp_conn *udp_conn;
 #endif
 
 
+/* Received packet, copied out of uip_buf so the structs are aligned */
+static union {
+  struct pkt_hdr hdr;
+  struct pkt_rms rms;
+  struct pkt_alert alert;
+  struct pkt_raw raw;
+} pkt;
+
+
+static void
+print_packet(uint16_t len)
+{
+  uint8_t i;
+
+  switch(pkt.hdr.type) {
+  case PACKET_FORMAT_TYPE_RMS:
+    printf("[COORD] RMS node %u seq %u: x=%u y=%u z=%u mg\n",
+           pkt.hdr.node_id, pkt.hdr.seq, pkt.rms.x, pkt.rms.y, pkt.rms.z);
+    break;
+
+  case PACKET_FORMAT_TYPE_ALERT:
+    printf("[COORD] ALERT node %u seq %u axes 0x%x: x=%u y=%u z=%u mg\n",
+           pkt.hdr.node_id, pkt.hdr.seq, pkt.alert.axes,
+           pkt.alert.x, pkt.alert.y, pkt.alert.z);
+    break;
+
+  case PACKET_FORMAT_TYPE_RAW:
+    printf("[COORD] RAW node %u seq %u chunk %u (%u samples)\n",
+           pkt.hdr.node_id, pkt.hdr.seq, pkt.raw.index, pkt.raw.count);
+    for(i = 0; i < pkt.raw.count && i < PACKET_FORMAT_RAW_SAMPLES_PER_PACKET; i++) {
+      printf("  %u: %d %d %d\n",
+             pkt.raw.index * PACKET_FORMAT_RAW_SAMPLES_PER_PACKET + i,
+             pkt.raw.xyz[i][0], pkt.raw.xyz[i][1], pkt.raw.xyz[i][2]);
+    }
+    break;
+
+  default:
+    printf("[COORD] unknown packet type %u (len=%u)\n", pkt.hdr.type, len);
+    break;
+  }
+}
+
+
 static void
 udp_rx_handler(void)
 {
   if(uip_newdata()) {
-    char buf[17];
     uint16_t len = uip_datalen();
+    const linkaddr_t *hop;
+    uint16_t relay_id;
 
-    if(len > sizeof(buf) - 1) {
-      len = sizeof(buf) - 1;
+    if(len > sizeof(pkt)) {
+      len = sizeof(pkt);
     }
     /* memcpy avoids unaligned access on the JN516x */
-    memcpy(buf, uip_appdata, len);
-    buf[len] = '\0';
+    memset(&pkt, 0, sizeof(pkt));
+    memcpy(&pkt, uip_appdata, len);
 
-uint16_t src[8];
+#if 1
+    {
+      uint16_t src[8];
 
-memcpy(src, UIP_IP_BUF->srcipaddr.u8, sizeof(src));
+      memcpy(src, UIP_IP_BUF->srcipaddr.u8, sizeof(src));
+      printf("[COORD] UDP from %04x:%04x:%04x:%04x:"
+             "%04x:%04x:%04x:%04x (len=%u)\n",
+             uip_ntohs(src[0]), uip_ntohs(src[1]),
+             uip_ntohs(src[2]), uip_ntohs(src[3]),
+             uip_ntohs(src[4]), uip_ntohs(src[5]),
+             uip_ntohs(src[6]), uip_ntohs(src[7]), len);
+    }
+#endif
 
-printf("[COORD] UDP from %04x:%04x:%04x:%04x:"
-       "%04x:%04x:%04x:%04x\n",
-       uip_ntohs(src[0]),
-       uip_ntohs(src[1]),
-       uip_ntohs(src[2]),
-       uip_ntohs(src[3]),
-       uip_ntohs(src[4]),
-       uip_ntohs(src[5]),
-       uip_ntohs(src[6]),
-       uip_ntohs(src[7]));
-  printf(": value = %s (len=%u)\n", buf, uip_datalen());
+    /*
+     * Last hop: the UDP callback runs synchronously from the radio input
+     * path, so packetbuf still holds the received frame's MAC source.
+     * Node ID = last 2 bytes of the MAC, same as node_id on that node.
+     */
+    hop = packetbuf_addr(PACKETBUF_ADDR_SENDER);
+    relay_id = (hop->u8[LINKADDR_SIZE - 2] << 8) | hop->u8[LINKADDR_SIZE - 1];
+
+    printf("[COORD] RX from node %u via node %u%s (len=%u)\n",
+           pkt.hdr.node_id, relay_id,
+           relay_id == pkt.hdr.node_id ? " (direct)" : "", len);
+
+    print_packet(len);
   }
 }
 

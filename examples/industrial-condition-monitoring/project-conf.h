@@ -8,7 +8,8 @@
 #define WITH_TSCH 1
 #define WITH_TSCH_SECURITY 0
 
-#define TSCH_LOG_CONF_LEVEL 2
+#undef TSCH_LOG_CONF_LEVEL
+#define TSCH_LOG_CONF_LEVEL 0
 
 #undef IEEE802154_CONF_PANID
 #define IEEE802154_CONF_PANID 0x5254
@@ -24,6 +25,8 @@
 
 #undef FRAME802154_CONF_VERSION
 #define FRAME802154_CONF_VERSION FRAME802154_IEEE802154E_2012
+
+#define RADIO_REPORT_FREQUENCY 15
 
 /* =========================================================
  * TSCH hopping sequence
@@ -149,6 +152,35 @@
 
 
 /* =========================================================
+ * Application: vibration reporting (see packet-format.h)
+ * ========================================================= */
+
+/* RMS frame period: 30 s or 60 s */
+#define APP_CONF_RMS_SEND_INTERVAL (30 * CLOCK_SECOND)
+
+/* How often a window is sampled and checked for an alert */
+#define APP_CONF_ALERT_CHECK_INTERVAL (5 * CLOCK_SECOND)
+
+/*
+ * Per-axis RMS (milli-g) that triggers an ALERT, 0 = off.
+ *
+ * ISO 10816-3 / ISO 20816-3, group 2 machines (15-300 kW) on a rigid
+ * foundation: zone B/C boundary = 2.8 mm/s velocity RMS ("unsatisfactory
+ * for long-term operation", the usual ALERT level; C/D = 4.5 mm/s is the
+ * damage/TRIP level). The standard is velocity based; converted to
+ * acceleration at the 50 Hz running speed (3000 rpm):
+ *   a = 2*pi*f*v = 2*pi*50*0.0028 = 0.88 m/s^2 = 90 mg
+ */
+#define APP_CONF_ALERT_RMS_THRESHOLD 90
+
+/* Also send the raw window after an ALERT */
+#define APP_CONF_SEND_RAW_ON_ALERT 1
+
+/* Samples per RAW packet (6 bytes each) */
+#define PACKET_FORMAT_CONF_RAW_SAMPLES_PER_PACKET 8
+
+
+/* =========================================================
  * IPv6 / 6LoWPAN
  * ========================================================= */
 
@@ -243,6 +275,8 @@
 #undef TSCH_QUEUE_CONF_MAX_NEIGHBOR_QUEUES
 #define TSCH_QUEUE_CONF_MAX_NEIGHBOR_QUEUES 8
 
+#undef TSCH_CONF_DEFAULT_TIMESLOT_LENGTH
+#define TSCH_CONF_DEFAULT_TIMESLOT_LENGTH 10000
 
 /* =========================================================
  * MAC / RDC
